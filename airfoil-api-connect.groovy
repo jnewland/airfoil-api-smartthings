@@ -4,7 +4,9 @@ definition(
   author: "Jesse Newland",
   description: "Connect to a local copy of Airfoil API to add and control Airfoil connected Speakers",
   category: "SmartThings Labs",
-)
+  iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+  iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
 
 def mainPage() {
   if (ip) {
