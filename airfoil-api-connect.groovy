@@ -319,9 +319,7 @@ def setLevel(childDevice, percent) {
 }
 
 private getId(childDevice) {
-  else {
-    return childDevice.device?.deviceNetworkId.split("/")[-1]
-  }
+  return childDevice.device?.deviceNetworkId.split("/")[-1]
 }
 
 private poll() {
