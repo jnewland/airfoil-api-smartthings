@@ -90,7 +90,8 @@ def uninstalled() {
 def addSpeakers() {
   def speakers = getSpeakers()
   speakers.each { s ->
-    def d = getChildDevice(app.id + "/" + s.id)
+    def dni = app.id + "/" + s.id
+    def d = getChildDevice(dni)
     if(!d) {
       d = addChildDevice("airfoil", "Airfoil Speaker", dni, s?.hub, ["label":s?.name])
       log.debug "created ${d.displayName} with id $dni"
@@ -259,10 +260,18 @@ def parse(childDevice, description) {
     if (body?.id != null)
     { //POST /speakers/*/* response
       def speakers = getChildDevices()
-      def speakerParams = [:] <<
-      speakerParams << ["hub":hub]
-      speakerParams.remove('id')
-      speakers[body.id] = speakerParams
+      def d = speakers.find{it.deviceNetworkId == "${app.id}/${body.id}"}
+      if (d) {
+        if (body.connected) {
+          if (body.connected == "true") {
+            sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
+          } else {
+            sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
+          }
+        } else if (body.volume) {
+          sendEvent(d.deviceNetworkId, [name: "level", value: body.volume])
+        }
+      }
     }
     else if (body.error != null)
     {
@@ -273,13 +282,16 @@ def parse(childDevice, description) {
     { //GET /speakers response (application/json)
       def bodySize = body.size() ?: 0
       if (bodySize > 0 ) {
-        def speakers = getSpeakers()
+        def speakers = getChildDevices()
         body.each { s ->
-          def speakerParams = [:] << s
-          speakerParams.remove('id')
-          speakerParams << ["hub":hub]
-          speakerParams.each { k,v ->
-            speakers[s.id][k] = v
+          def d = speakers.find{it.deviceNetworkId == "${app.id}/${body.id}"}
+          if (d) {
+            if (s.connected == "true") {
+              sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
+            } else {
+              sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
+            }
+            sendEvent(d.deviceNetworkId, [name: "level", value: s.volume])
           }
         }
       }
