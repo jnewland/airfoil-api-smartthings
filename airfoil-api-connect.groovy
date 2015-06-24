@@ -8,6 +8,10 @@ definition(
   iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
   iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
 
+preferences {
+  page(name:"mainPage", title:"Airfoil API Setup", content:"mainPage", refreshTimeout:5)
+}
+
 def mainPage() {
   if (ip) {
     return speakerDiscovery()
