@@ -303,9 +303,7 @@ def off(childDevice) {
   post("/speakers/${getId(childDevice)}/disconnect", "", getId(childDevice))
 }
 
-def setLevel(childDevice, percent) {
-  log.debug "Executing 'setLevel'"
-  def level = Math.round(percent * 100)
+def setLevel(childDevice, level) {
   post("/speakers/${getId(childDevice)}/volume", "${level}", getId(childDevice))
 }
 
@@ -326,11 +324,14 @@ private post(path, text, dni) {
   def uri = "$path"
   def length = text.getBytes().size().toString()
 
-  sendHubCommand(new physicalgraph.device.HubAction("""POST $uri HTTP/1.1
-HOST: ${ip}:${port}
-Content-Length: ${length}
-
-${text}
-""", physicalgraph.device.Protocol.LAN, dni))
+  log.debug "POST:  $uri"
+  log.debug "POST BODY: $text"
+  sendHubCommand(
+      new physicalgraph.device.HubAction(
+        """POST ${uri} HTTP/1.1\r\nHOST: $ip:$port\r\nContent-length: ${length}\r\nContent-type: text/plain\r\n\r\n${text}\r\n""",
+        physicalgraph.device.Protocol.LAN,
+        dni
+      )
+  )
 
 }

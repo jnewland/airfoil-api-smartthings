@@ -54,10 +54,13 @@ def off() {
   sendEvent(name: "switch", value: "off")
 }
 
-def setLevel(percent) {
+def setLevel(level) {
   log.debug "Executing 'setLevel'"
+  log.debug "level=${level}"
+  def percent = level / 100.00
+  log.debug "percent=${percent}"
   parent.setLevel(this, percent)
-  sendEvent(name: "level", value: percent)
+  sendEvent(name: "level", value: level)
 }
 
 def refresh() {
