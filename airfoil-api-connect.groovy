@@ -23,10 +23,9 @@ def config() {
     if (ip && port) {
       int speakerRefreshCount = !state.speakerRefreshCount ? 0 : state.speakerRefreshCount as int
       state.speakerRefreshCount = speakerRefreshCount + 1
-      poll()
+      doDeviceSync()
 
-      // def options = speakersDiscovered() ?: []
-      def options = []
+      def options = getSpeakers() ?: []
       def numFound = options.size() ?: 0
 
       section("Please wait while we discover your speakers. Select your devices below once discovered.") {
@@ -51,7 +50,6 @@ def initialize() {
   // remove location subscription aftwards
   log.debug "INITIALIZE"
   unschedule()
-  state.subscribe = false
 
   if (selectedSpeakers) {
     addSpeakers()
@@ -93,42 +91,47 @@ def locationHandler(evt) {
   {
     log.trace "Airfoil API response"
     def headerString = new String(parsedEvent.headers.decodeBase64())
+    log.trace "Airfoil API response: ${headerString}"
     def bodyString = new String(parsedEvent.body.decodeBase64())
-    def type = (headerString =~ /Content-type:.*/) ? (headerString =~ /Content-type:.*/)[0] : null
-    def body
+    log.trace "Airfoil API response: ${bodyString}"
+    def body = new groovy.json.JsonSlurper().parseText(bodyString)
+    log.trace "Airfoil API response: ${body}"
 
-    if(type?.contains("json"))
-    { //(application/json)
-      body = new groovy.json.JsonSlurper().parseText(bodyString)
-
-      if (body?.id != null)
-      { //POST /speakers/*/* response
+    if (body.error)
+    {
+      //TODO: handle retries...
+      log.error "ERROR: ${body.error}"
+    }
+    else if (body instanceof java.util.List)
+    { //POST /speakers/*/* response
+      def speakers = getSpeakers()
+      def speakerParams = [:] << ["hub":hub]
+      speakerParams.remove('id')
+      if (speakers[body.id]) {
+        state.speakers[body.id] << speakerParams
+      } else {
+        state.speakers[body.id] = speakerParams
+      }
+    }
+    else if (body instanceof java.util.HashMap)
+    { //GET /speakers response (application/json)
+      def bodySize = body.size() ?: 0
+      if (bodySize > 0 ) {
         def speakers = getSpeakers()
-        def speakerParams = [:] <<
-        speakerParams << ["hub":hub]
-        speakerParams.remove('id')
-        speakers[body.id] = speakerParams
-      }
-      else if (body.error != null)
-      {
-        //TODO: handle retries...
-        log.error "ERROR: application/json ${body.error}"
-      }
-      else
-      { //GET /speakers response (application/json)
-        def bodySize = body.size() ?: 0
-        if (bodySize > 0 ) {
-          def speakers = getSpeakers()
-          body.each { s ->
-            def speakerParams = [:] << s
-            speakerParams.remove('id')
-            speakerParams << ["hub":hub]
-            speakerParams.each { k,v ->
-              speakers[s.id][k] = v
-            }
+        body.each { s ->
+          def speakerParams = [:] << s
+          speakerParams.remove('id')
+          speakerParams << ["hub":hub]
+          speakerParams.each { k,v ->
+            state.speakers[s.id][k] = v
           }
         }
       }
+    }
+    else
+    {
+      //TODO: handle retries...
+      log.error "ERROR: unknown body type"
     }
   }
   else {
