@@ -18,6 +18,7 @@ def config() {
     section("Please enter the details of the running copy of Airfoil API you want to control") {
       input(name: "ip", type: "text", title: "IP", description: "Airfoil API IP", required: true, submitOnChange: true)
       input(name: "port", type: "text", title: "Port", description: "Airfoil API port", required: true, submitOnChange: true)
+      input(name: "name", type: "text", title: "Name", description: "Computer Name", required: true, submitOnChange: true)
     }
 
     if (ip && port) {
@@ -25,11 +26,23 @@ def config() {
       state.speakerRefreshCount = speakerRefreshCount + 1
       doDeviceSync()
 
-      def options = getSpeakers() ?: []
+      def options = getSpeakers().collect { s ->
+        if (s.name == name) {
+          null
+        } else if (s.name == "Computer") {
+          null
+        } else {
+          s.name
+        }
+      }
+      options.removeAll([null])
+      log.trace "Speaker options: ${options}"
       def numFound = options.size() ?: 0
 
-      section("Please wait while we discover your speakers. Select your devices below once discovered.") {
-        input name: "selectedSpeakers", type: "enum", required:false, title:"Select Speakers (${numFound} found)", multiple:true, options:options
+      if (name) {
+        section("Please wait while we discover your speakers. Select your devices below once discovered.") {
+          input name: "selectedSpeakers", type: "enum", required:false, title:"Select Speakers (${numFound} found)", multiple:true, options:options
+        }
       }
     }
   }
@@ -49,12 +62,14 @@ def updated() {
 def initialize() {
   // remove location subscription aftwards
   log.debug "INITIALIZE"
-  unschedule()
+  state.subscribe = false
+  unsubscribe()
 
   if (selectedSpeakers) {
     addSpeakers()
   }
   if (ip) {
+    doDeviceSync()
     runEvery5Minutes("doDeviceSync")
   }
 }
@@ -67,14 +82,18 @@ def uninstalled() {
 def addSpeakers() {
   def speakers = getSpeakers()
   speakers.each { s ->
-    def dni = app.id + "/" + s.id
-    def d = getChildDevice(dni)
-    if(!d) {
-      d = addChildDevice("airfoil", "Airfoil Speaker", dni, s?.hub, ["label":s?.name])
-      log.debug "created ${d.displayName} with id $dni"
-      d.refresh()
-    } else {
-      log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
+    selectedSpeakers.findAll { selected ->
+      selected == s.name
+    }.each {
+      def dni = app.id + "/" + s.id
+      def d = getChildDevice(dni)
+      if(!d) {
+        d = addChildDevice("airfoil", "Airfoil Speaker", dni, null, ["label": "${s.name}@${name}"])
+        log.debug "created ${d.displayName} with id $dni"
+        d.refresh()
+      } else {
+        log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
+      }
     }
   }
 }
@@ -276,18 +295,18 @@ def parse(childDevice, description) {
 
 def on(childDevice) {
   log.debug "Executing 'on'"
-  post("/speakers/${getId(childDevice)}/connect", "")
+  post("/speakers/${getId(childDevice)}/connect", "", getId(childDevice))
 }
 
 def off(childDevice) {
   log.debug "Executing 'off'"
-  post("/speakers/${getId(childDevice)}/disconnect", "")
+  post("/speakers/${getId(childDevice)}/disconnect", "", getId(childDevice))
 }
 
 def setLevel(childDevice, percent) {
   log.debug "Executing 'setLevel'"
   def level = Math.round(percent * 100)
-  post("/speakers/${getId(childDevice)}/volume", "${level}")
+  post("/speakers/${getId(childDevice)}/volume", "${level}", getId(childDevice))
 }
 
 private getId(childDevice) {
@@ -303,7 +322,7 @@ HOST: ${ip}:${port}
 """, physicalgraph.device.Protocol.LAN, "${ip}:${port}"))
 }
 
-private post(path, text) {
+private post(path, text, dni) {
   def uri = "$path"
   def length = text.getBytes().size().toString()
 
@@ -312,6 +331,6 @@ HOST: ${ip}:${port}
 Content-Length: ${length}
 
 ${text}
-""", physicalgraph.device.Protocol.LAN, "${ip}:${port}"))
+""", physicalgraph.device.Protocol.LAN, dni))
 
 }
