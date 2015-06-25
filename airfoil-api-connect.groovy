@@ -9,47 +9,31 @@ definition(
   iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
 
 preferences {
-  page(name:"mainPage")
+  page(name: "config")
 }
 
-def mainPage() {
-  if (ip) {
-    return speakerDiscovery()
-  } else {
-    return airfoilSelection()
-  }
-}
+def config() {
+  dynamicPage(name: "config", title: "Airfoil API", install: true, uninstall: true) {
 
-def airfoilSelection()
-{
-  return dynamicPage(name:"airfoilSelection", title:"Airfoil API Config", nextPage:"speakerDiscovery", uninstall: true) {
     section("Please enter the details of the running copy of Airfoil API you want to control") {
-      input("ip", "text", title: "IP", description: "Airfoil API IP", required: true)
-      input("port", "text", title: "Port", description: "Airfoil API port", required: true)
+      input(name: "ip", type: "text", title: "IP", description: "Airfoil API IP", required: true, submitOnChange: true)
+      input(name: "port", type: "text", title: "Port", description: "Airfoil API port", required: true, submitOnChange: true)
     }
-  }
-}
 
-def speakerDiscovery()
-{
-  int speakerRefreshCount = !state.speakerRefreshCount ? 0 : state.speakerRefreshCount as int
-  speaker.speakerRefreshCount = speakerRefreshCount + 1
-  def refreshInterval = 3
+    if (ip && port) {
+      int speakerRefreshCount = !state.speakerRefreshCount ? 0 : state.speakerRefreshCount as int
+      state.speakerRefreshCount = speakerRefreshCount + 1
 
-  def options = speakersDiscovered() ?: []
-  def numFound = options.size() ?: 0
+      def options = speakersDiscovered() ?: []
+      def numFound = options.size() ?: 0
 
-  if((speakerRefreshCount % 3) == 0) {
-    discoverSpeakers()
-  }
+      if((speakerRefreshCount % 3) == 0) {
+        discoverSpeakers()
+      }
 
-  return dynamicPage(name:"speakerDiscovery", title:"Select speakers", nextPage:"", refreshInterval:refreshInterval, install:true, uninstall: true) {
-    section("Please wait while we discover your speakers. Select your devices below once discovered.") {
-      input "selectedSpeakers", "enum", required:false, title:"Select Speakers (${numFound} found)", multiple:true, options:options
-    }
-    section {
-      def title = ip ? "Airfoil API running at ${ip}:${port}" : "Connect to Airfoil API"
-      href "airfoilSelection", title: title, description: "", state: ip ? "complete" : "incomplete", params: [override: true]
+      section("Please wait while we discover your speakers. Select your devices below once discovered.") {
+        input name: "selectedSpeakers", type: "enum", required:false, title:"Select Speakers (${numFound} found)", multiple:true, options:options
+      }
     }
   }
 }
