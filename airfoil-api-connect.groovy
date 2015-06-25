@@ -23,28 +23,17 @@ def config() {
     if (ip && port) {
       int speakerRefreshCount = !state.speakerRefreshCount ? 0 : state.speakerRefreshCount as int
       state.speakerRefreshCount = speakerRefreshCount + 1
+      poll()
 
-      def options = speakersDiscovered() ?: []
+      // def options = speakersDiscovered() ?: []
+      def options = []
       def numFound = options.size() ?: 0
-
-      if((speakerRefreshCount % 3) == 0) {
-        discoverSpeakers()
-      }
 
       section("Please wait while we discover your speakers. Select your devices below once discovered.") {
         input name: "selectedSpeakers", type: "enum", required:false, title:"Select Speakers (${numFound} found)", multiple:true, options:options
       }
     }
   }
-}
-
-private discoverSpeakers() {
-  sendHubCommand(new physicalgraph.device.HubAction([
-    method: "GET",
-    path: "/speakers",
-    headers: [
-      HOST: "${ip}:${port}"
-    ]], ip))
 }
 
 def installed() {
