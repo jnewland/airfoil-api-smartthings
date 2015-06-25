@@ -97,35 +97,25 @@ def locationHandler(evt) {
     def body = new groovy.json.JsonSlurper().parseText(bodyString)
     log.trace "Airfoil API response: ${body}"
 
-    if (body.error)
-    {
-      //TODO: handle retries...
-      log.error "ERROR: ${body.error}"
+    if (body instanceof java.util.HashMap)
+    { //GET /speakers response (application/json)
+      def speakers = atomicState.speakers.collect { s ->
+        if (s.id == body.id) {
+          body
+        } else {
+          s
+        }
+      }
+      atomicState.speakers = speakers
+      log.trace "Set atomicState.speakers to ${speakers}"
+
     }
     else if (body instanceof java.util.List)
     { //POST /speakers/*/* response
-      def speakers = getSpeakers()
-      def speakerParams = [:] << ["hub":hub]
-      speakerParams.remove('id')
-      if (speakers[body.id]) {
-        state.speakers[body.id] << speakerParams
-      } else {
-        state.speakers[body.id] = speakerParams
-      }
-    }
-    else if (body instanceof java.util.HashMap)
-    { //GET /speakers response (application/json)
       def bodySize = body.size() ?: 0
       if (bodySize > 0 ) {
-        def speakers = getSpeakers()
-        body.each { s ->
-          def speakerParams = [:] << s
-          speakerParams.remove('id')
-          speakerParams << ["hub":hub]
-          speakerParams.each { k,v ->
-            state.speakers[s.id][k] = v
-          }
-        }
+        atomicState.speakers = body
+        log.trace "Set atomicState.speakers to ${speakers}"
       }
     }
     else
@@ -140,7 +130,7 @@ def locationHandler(evt) {
 }
 
 def getSpeakers() {
-  state.speakers = state.speakers ?: [:]
+  atomicState.speakers ?: [:]
 }
 
 private def parseEventMessage(Map event) {
