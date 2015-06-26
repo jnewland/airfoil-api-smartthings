@@ -26,21 +26,6 @@ metadata {
     details(["switch", "levelSliderControl", "refresh"])  }
 }
 
-// parse events into attributes
-        // body.each { s ->
-        //   def dni = app.id + "/" + s.id
-        //   if (s.connected == "true") {
-        //     sendEvent(dni, [name: "switch", value: "on"])
-        //   } else {
-        //     sendEvent(dni, [name: "switch", value: "off"])
-        //   }
-        //   if (s.volume) {
-        //     float f = Float.parseFloat(s.volume);
-        //     def level = Math.round(f * 100.00)
-        //     sendEvent(dni, [name: "level", value: level])
-        //   }
-        // }
-
 def parse(description) {
   log.debug "parse() - $description"
   def results = []

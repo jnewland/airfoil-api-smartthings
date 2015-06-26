@@ -98,7 +98,6 @@ def addSpeakers() {
 }
 
 def locationHandler(evt) {
-  log.info "LOCATION HANDLER: $evt.description"
   def description = evt.description
   def hub = evt?.hubId
 
@@ -123,12 +122,40 @@ def locationHandler(evt) {
       }
       atomicState.speakers = speakers
       log.trace "Set atomicState.speakers to ${speakers}"
+      def dni = app.id + "/" + body.id
+      def d = getChildDevice(dni)
+      if (d) {
+        if (body.connected == "true") {
+          sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
+        } else {
+          sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
+        }
+        if (body.volume) {
+          def level = Math.round(body.volume * 100.00)
+          sendEvent(d.deviceNetworkId, [name: "level", value: level])
+        }
+      }
     }
     else if (body instanceof java.util.List)
     { //GET /speakers response (application/json)
       def bodySize = body.size() ?: 0
       if (bodySize > 0 ) {
         atomicState.speakers = body
+        body.each { s ->
+          def dni = app.id + "/" + s.id
+          def d = getChildDevice(dni)
+          if (d) {
+            if (s.connected == "true") {
+              sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
+            } else {
+              sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
+            }
+            if (s.volume) {
+              def level = Math.round(s.volume * 100.00)
+              sendEvent(dni, [name: "level", value: level])
+            }
+          }
+        }
         log.trace "Set atomicState.speakers to ${speakers}"
       }
     }
