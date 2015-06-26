@@ -8,9 +8,16 @@ Amoeba's [Airfoil](https://www.rogueamoeba.com/airfoil/) with
 
 ![](http://virtual-host-discourse.global.ssl.fastly.net/uploads/smartthings/optimized/3X/7/6/76c7157fdf233ef86aa8c611ca30cb1fa4db891d_1_281x499.jpg)
 
-Essentially duplicates the functionality of
+This project essentially duplicates the functionality of
 [Airfoil Remote](https://www.rogueamoeba.com/airfoil/remote/) in a way that you
-can integrate with the rest of your home automation.
+can integrate with the rest of your SmartThings automation.
+
+## Crazy things you could do with this
+
+* Mount an iPad on the wall for easy volume control
+* Control Airfoil speaker volume with a Z-Wave dimmer
+* Turn on and off Airfoil speakers
+  [with HomeKit and Siri](http://community.smartthings.com/t/hello-home-homekit-and-siri-control-via-homebridge/16701)
 
 ### Setup
 
@@ -36,13 +43,6 @@ can integrate with the rest of your home automation.
 * Tap "Done" and navigate back to the SmartThings home screen.
 * Tap the `+` icon in your SmartThings iOS app and add the detected speakers
   to your device list.
-
-## Crazy things you could do with this
-
-* Mount an iPad on the wall for easy volume control
-* Control Airfoil speaker volume with a Z-Wave dimmer
-* Turn on and off Airfoil speakers
-  [with HomeKit and Siri](http://community.smartthings.com/t/hello-home-homekit-and-siri-control-via-homebridge/16701)
 
 # Disclaimer
 
