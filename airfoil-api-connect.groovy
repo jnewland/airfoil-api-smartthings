@@ -49,19 +49,14 @@ def config() {
 }
 
 def installed() {
-  log.trace "Installed with settings: ${settings}"
   initialize()
 }
 
 def updated() {
-  log.trace "Updated with settings: ${settings}"
-  unsubscribe()
   initialize()
 }
 
 def initialize() {
-  // remove location subscription aftwards
-  log.debug "INITIALIZE"
   state.subscribe = false
   unsubscribe()
 
@@ -81,10 +76,10 @@ def uninstalled() {
 
 def addSpeakers() {
   def speakers = getSpeakers()
-  speakers.each { s ->
+  speakers.collect { s ->
     selectedSpeakers.findAll { selected ->
       selected == s.name
-    }.each {
+    }.first {
       def dni = app.id + "/" + s.id
       def d = getChildDevice(dni)
       if(!d) {
@@ -94,8 +89,12 @@ def addSpeakers() {
       } else {
         log.debug "found ${d.displayName} with id $dni already exists, type: '$d.typeName'"
       }
+      s.dni = dni
+      return s
     }
   }
+  atomicState.speakers = speakers
+  log.trace "Set atomicState.speakers to ${speakers}"
 }
 
 def locationHandler(evt) {
@@ -108,16 +107,13 @@ def locationHandler(evt) {
 
   if (parsedEvent.headers && parsedEvent.body)
   {
-    log.trace "Airfoil API response"
     def headerString = new String(parsedEvent.headers.decodeBase64())
-    log.trace "Airfoil API response: ${headerString}"
     def bodyString = new String(parsedEvent.body.decodeBase64())
-    log.trace "Airfoil API response: ${bodyString}"
     def body = new groovy.json.JsonSlurper().parseText(bodyString)
     log.trace "Airfoil API response: ${body}"
 
     if (body instanceof java.util.HashMap)
-    { //GET /speakers response (application/json)
+    { //POST /speakers/*/* response
       def speakers = atomicState.speakers.collect { s ->
         if (s.id == body.id) {
           body
@@ -127,10 +123,9 @@ def locationHandler(evt) {
       }
       atomicState.speakers = speakers
       log.trace "Set atomicState.speakers to ${speakers}"
-
     }
     else if (body instanceof java.util.List)
-    { //POST /speakers/*/* response
+    { //GET /speakers response (application/json)
       def bodySize = body.size() ?: 0
       if (bodySize > 0 ) {
         atomicState.speakers = body
@@ -223,73 +218,11 @@ private def parseEventMessage(String description) {
 }
 
 def doDeviceSync(){
-  log.trace "Device Sync!"
-
   poll()
 
   if(!state.subscribe) {
     subscribe(location, null, locationHandler, [filterEvents:false])
     state.subscribe = true
-  }
-
-}
-
-
-/////////////////////////////////////
-//CHILD DEVICE METHODS
-/////////////////////////////////////
-
-// TODO make this handle device id matching like hue-connect parse
-def parse(childDevice, description) {
-  def parsedEvent = parseEventMessage(description)
-
-  if (parsedEvent.headers && parsedEvent.body) {
-    def headerString = new String(parsedEvent.headers.decodeBase64())
-    def bodyString = new String(parsedEvent.body.decodeBase64())
-    log.debug "parse() - ${bodyString}"
-    def body = new groovy.json.JsonSlurper().parseText(bodyString)
-    if (body?.id != null)
-    { //POST /speakers/*/* response
-      def speakers = getChildDevices()
-      def d = speakers.find{it.deviceNetworkId == "${app.id}/${body.id}"}
-      if (d) {
-        if (body.connected) {
-          if (body.connected == "true") {
-            sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
-          } else {
-            sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
-          }
-        } else if (body.volume) {
-          sendEvent(d.deviceNetworkId, [name: "level", value: body.volume])
-        }
-      }
-    }
-    else if (body.error != null)
-    {
-      //TODO: handle retries...
-      log.error "ERROR: application/json ${body.error}"
-    }
-    else
-    { //GET /speakers response (application/json)
-      def bodySize = body.size() ?: 0
-      if (bodySize > 0 ) {
-        def speakers = getChildDevices()
-        body.each { s ->
-          def d = speakers.find{it.deviceNetworkId == "${app.id}/${body.id}"}
-          if (d) {
-            if (s.connected == "true") {
-              sendEvent(d.deviceNetworkId, [name: "switch", value: "on"])
-            } else {
-              sendEvent(d.deviceNetworkId, [name: "switch", value: "off"])
-            }
-            sendEvent(d.deviceNetworkId, [name: "level", value: s.volume])
-          }
-        }
-      }
-    }
-  } else {
-    log.debug "parse - got something other than headers,body..."
-    return []
   }
 }
 
@@ -325,7 +258,6 @@ private post(path, text, dni) {
   def length = text.getBytes().size().toString()
 
   log.debug "POST:  $uri"
-  log.debug "POST BODY: $text"
   sendHubCommand(
       new physicalgraph.device.HubAction(
         """POST ${uri} HTTP/1.1\r\nHOST: $ip:$port\r\nContent-length: ${length}\r\nContent-type: text/plain\r\n\r\n${text}\r\n""",

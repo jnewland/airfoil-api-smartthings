@@ -9,8 +9,8 @@ metadata {
   // UI tile definitions
   tiles {
     standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-      state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-      state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+      state "off", label: '${name}', action: "switch.on", icon: "st.Electronics.electronics16", backgroundColor: "#ffffff"
+      state "on", label: '${name}', action: "switch.off", icon: "st.Electronics.electronics16", backgroundColor: "#79b821"
     }
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
       state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -27,6 +27,20 @@ metadata {
 }
 
 // parse events into attributes
+        // body.each { s ->
+        //   def dni = app.id + "/" + s.id
+        //   if (s.connected == "true") {
+        //     sendEvent(dni, [name: "switch", value: "on"])
+        //   } else {
+        //     sendEvent(dni, [name: "switch", value: "off"])
+        //   }
+        //   if (s.volume) {
+        //     float f = Float.parseFloat(s.volume);
+        //     def level = Math.round(f * 100.00)
+        //     sendEvent(dni, [name: "level", value: level])
+        //   }
+        // }
+
 def parse(description) {
   log.debug "parse() - $description"
   def results = []
