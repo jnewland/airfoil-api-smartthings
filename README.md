@@ -1,5 +1,7 @@
 # Control Airfoil with SmartThings
 
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 Uses [airfoil-api](https://github.com/jnewland/airfoil-api) to control Rogue
 Amoeba's [Airfoil](https://www.rogueamoeba.com/airfoil/) with
 [SmartThings](http://www.smartthings.com/).
